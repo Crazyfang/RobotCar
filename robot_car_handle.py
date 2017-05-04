@@ -16,6 +16,7 @@ class RobotCarHandle():
         None.
 
     """
+
     def __init__(self):
 
         # 拍摄前延时时间
@@ -25,7 +26,7 @@ class RobotCarHandle():
         self.taking_photo_times = 2
 
         # 图像存储路径
-        self.photo_path = './2017420/'
+        self.photo_path = './picture/'
 
         # 黄色小木块初始颜色阈值
         self.lower_yellow = np.array([15, 130, 80])
@@ -48,7 +49,7 @@ class RobotCarHandle():
         # NeuralNetwork
         # self.Nn = NeuralNetwork()
         # 切图保存路径
-        self.cut_pic_path = './2017420/Cut/'
+        self.cut_pic_path = './picture/Cut/'
 
         # 图片预处理列表 [识别度, 物品名称, 照片序号， 上下编号{上-0|下-1}, 验证结果{True|False}]
         self.pre_items = []
@@ -82,6 +83,16 @@ class RobotCarHandle():
 
         if not os.path.exists('./files'):
             os.mkdir('./files')
+        else:
+            pass
+
+        if not os.path.exists(self.photo_path):
+            os.mkdir(self.photo_path)
+        else:
+            pass
+
+        if not os.path.exists(self.cut_pic_path):
+            os.mkdir(self.cut_pic_path)
         else:
             pass
 
@@ -261,7 +272,7 @@ class RobotCarHandle():
                             # print(w + h)
                             break
 
-                            # 识别下半部分
+                # 识别下半部分
                 img = img_all.copy()
                 crop_img = img[int(self.transverseline[1]):int(self.transverseline[2]),
                            int(self.verticalline[0]):int(self.verticalline[1])]
@@ -348,7 +359,7 @@ class RobotCarHandle():
         print("Recongnition Process Start")
         # 已经查询列表
         Now_List = []
-        v = GoodClassifier(shopping_list_path = './shopping_list.txt', weight_path = './weight')
+        v = GoodClassifier(shopping_list_path = './shopping_list.txt', weight_path = './weight.h5')
         while True:
             if os.path.exists(self.finishfile):
                 print("Recongnition Process End")
@@ -468,7 +479,7 @@ class RobotCarHandle():
     # 返回B,C,D区结果
     def return_second_result(self):
         print(self.second_data)
-        return self.second_data
+        return sorted(self.second_data)
 
     # 最终处理
     def final_process(self):
@@ -703,6 +714,14 @@ class RobotCarHandle():
                     return_list.append(FItem)
                     Already_Get.append(name)
                     Already_Get_Position.append(FItem[:-1])
+                elif name == 'tennis ball':
+                    return_list.append(FItem)
+                    Already_Get.append(name)
+                    Already_Get_Position.append(FItem[:-1])
+                elif name == 'white pingpang ball':
+                    return_list.append(FItem)
+                    Already_Get.append(name)
+                    Already_Get_Position.append(FItem[:-1])
                 else:
                     # 需要验证的列表
                     try:
@@ -735,20 +754,20 @@ class RobotCarHandle():
                                 return_list.append(FItem)
                                 Already_Get.append(name)
                                 Already_Get_Position.append(FItem[:-1])
-                        elif name == 'tennis ball':
-                            print('开始验证网球')
-                            if self.tennis_confirm(FItem[0], FItem[1]):
-                                print('网球验证成功')
-                                return_list.append(FItem)
-                                Already_Get.append(name)
-                                Already_Get_Position.append(FItem[:-1])
-                        elif name == 'white pingpang ball':
-                            print('开始验证乒乓球')
-                            if self.pingpong_confirm(FItem[0], FItem[1]):
-                                print('乒乓球验证成功')
-                                return_list.append(FItem)
-                                Already_Get.append(name)
-                                Already_Get_Position.append(FItem[:-1])
+                        # elif name == 'tennis ball':
+                        #     print('开始验证网球')
+                        #     if self.tennis_confirm(FItem[0], FItem[1]):
+                        #         print('网球验证成功')
+                        #         return_list.append(FItem)
+                        #         Already_Get.append(name)
+                        #         Already_Get_Position.append(FItem[:-1])
+                        # elif name == 'white pingpang ball':
+                        #     print('开始验证乒乓球')
+                        #     if self.pingpong_confirm(FItem[0], FItem[1]):
+                        #         print('乒乓球验证成功')
+                        #         return_list.append(FItem)
+                        #         Already_Get.append(name)
+                        #         Already_Get_Position.append(FItem[:-1])
                     except Exception as e:
                         print(e)
 
@@ -1025,7 +1044,7 @@ class RobotCarHandle():
             for m, n in matches:
                 if m.distance < 0.80 * n.distance:
                     good.append(m)
-
+            print(len(good), MIN_MATCH_COUNT)
             if len(good) >= MIN_MATCH_COUNT:
                 return True
             else:
@@ -1116,7 +1135,7 @@ class RobotCarHandle():
     # 加多宝确认函数
     def jiaduobao_confirm(self, quhao, order_number):
         Jiaduobao_Template_Image = ["./model/111.jpg"]
-        Yuzhi = [90]
+        Yuzhi = [80]
 
         # 区域码
         Number = 0
@@ -1435,9 +1454,9 @@ class RobotCarHandle():
 
                         # circlelist = []
 
-                        # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
-                        # cv2.imshow('123', img)
-                        # cv2.waitKey(0)
+                    # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
+                    # cv2.imshow('123', img)
+                    # cv2.waitKey(0)
         return False
         # plt.subplot(121), plt.imshow(cimg, cmap='gray')
         # plt.title('Original Image'), plt.xticks([]), plt.yticks([])
@@ -1449,7 +1468,7 @@ class RobotCarHandle():
     # 网球颜色检测
     def tenniscolor(self, hsv):
         lower_yellow = np.array([32, 60, 58])
-        upper_yellow = np.array([40, 255, 180])
+        upper_yellow = np.array([40, 255, 210])
         mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
         img, contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
         print(len(contours))
@@ -1463,7 +1482,7 @@ if __name__ == "__main__":
     vision = RobotCarHandle()
     # vision.main_process()
     # vision.return_first_result()
-    print(vision.pencil_confirm('D',12))
+    print(vision.yangleduo_confirm('C',10))
     # for i in range(7, 25):
     #     vision.second_process(i)
     # vision.tf_confirm(7, 1)
