@@ -2009,12 +2009,3 @@ if __name__ == "__main__":
     #     vision.second_process_pipe(i)
     # vision.final_process_confirm_pipe()
     # vision.return_second_result()
-    # p = vision.second_process_queue(0)
-    # for i in range(7, 25):
-    #     vision.second_process_queue(i)
-    # p.join()
-    # vision.final_process_queue()
-    # vision.main_process()
-    # vision.return_first_result()
-    # print(vision.yangleduo_confirm('C',10))
-    # for i in range(7, 25):
