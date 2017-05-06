@@ -2018,8 +2018,3 @@ if __name__ == "__main__":
     # vision.return_first_result()
     # print(vision.yangleduo_confirm('C',10))
     # for i in range(7, 25):
-    #     vision.second_process(i)
-    # vision.tf_confirm(7, 1)
-    # 对结果排序
-    # Lists = sorted(vision.pre_items,reverse=True)
-    # 输出识别结果
