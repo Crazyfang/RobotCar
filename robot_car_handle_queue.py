@@ -32,7 +32,7 @@ class RobotCarHandle():
         self.photo_path = './picture/'
 
         # 黄色小木块初始颜色阈值
-        self.lower_yellow = np.array([15, 130, 80])
+        self.lower_yellow = np.array([15, 150, 80])
         self.upper_yellow = np.array([50, 255, 255])
 
         # 颜色调整值
@@ -46,8 +46,8 @@ class RobotCarHandle():
         self.color_materials = []
 
         # 图片切割信息
-        self.verticalline = [500, 2700]
-        self.transverseline = [140, 960, 1944]
+        self.verticalline = [500, 2100]
+        self.transverseline = [250, 1000, 1944]
 
         # NeuralNetwork
         # self.Nn = NeuralNetwork()
@@ -101,7 +101,7 @@ class RobotCarHandle():
 
         self.data_pipe = Pipe(True)
         self.result_pipe = Pipe(True)
-
+        
     # 开启摄像头
     def open_camera(self):
         self.cap = cv2.VideoCapture(1)
@@ -251,11 +251,13 @@ class RobotCarHandle():
     # A区图片处理 - 固定阈值
     def image_handle_fixed_value(self):
         try:
-            # 1-7张图为黄色物块
+            # 1-6张图为黄色物块
             for picture_sign in range(1, 7):
                 str = self.photo_path + '%d.png' % picture_sign
                 img_all = cv2.imread(str)
                 hsvs = cv2.cvtColor(img_all, cv2.COLOR_BGR2HSV)
+
+                # adjust = 0
 
                 # 识别上半部分
                 img = img_all.copy()
@@ -271,13 +273,18 @@ class RobotCarHandle():
                     for cnt in contours:
                         # contour_area_temp = np.fabs(cv2.contourArea(cnt))
                         x, y, w, h = cv2.boundingRect(cnt)
-                        if w + h > 100:
-                            # cv2.rectangle(crop_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                            # cv2.imshow('%d' % sub, crop_img)
+                        if w + h > 300:
+                        #     if w+h > adjust:
+                        #         adjust = w + h
+                        #     cv2.rectangle(crop_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
                             self.color_materials.append(["A", 2 * picture_sign - 1, "yellow cube"])
                             # print(w + h)
                             break
+                # cv2.imshow('123', crop_img)
+                # cv2.waitKey(0)
+                # print(adjust)
 
+                # adjust = 0
                 # 识别下半部分
                 img = img_all.copy()
                 crop_img = img[int(self.transverseline[1]):int(self.transverseline[2]),
@@ -292,12 +299,16 @@ class RobotCarHandle():
                     for cnt in contours:
                         # contour_area_temp = np.fabs(cv2.contourArea(cnt))
                         x, y, w, h = cv2.boundingRect(cnt)
-                        if w + h > 100:
+                        if w + h > 300:
+                            # if w+h > adjust:
+                            #     adjust = w + h
                             # cv2.rectangle(crop_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                            # cv2.imshow('%d' % sub, crop_img)
+
                             self.color_materials.append(["A", 2 * picture_sign, "yellow cube"])
                             # print(w + h)
                             break
+                # cv2.imshow('123', crop_img)
+                # cv2.waitKey(0)
         except Exception as e:
             print(e)
 
@@ -324,50 +335,53 @@ class RobotCarHandle():
             p.daemon = True
             p.start()
 
-        # if order_number != 0:
-        path = self.photo_path + '%d.png' % order_number
-        all_img = cv2.imread(path)
+        if order_number != 0:
+            path = self.photo_path + '%d.png' % order_number
+            all_img = cv2.imread(path)
 
-        # 保存上半张图片
-        img = all_img.copy()
-        crop_img = img[int(self.transverseline[0]):int(self.transverseline[1]),
-                   int(self.verticalline[0]):int(self.verticalline[1])]
-        cv2.imwrite(self.cut_pic_path + '%d_0.png' % order_number, crop_img)
+            # 保存上半张图片
+            img = all_img.copy()
+            crop_img = img[int(self.transverseline[0]):int(self.transverseline[1]),
+                       int(self.verticalline[0]):int(self.verticalline[1])]
+            cv2.imwrite(self.cut_pic_path + '%d_0.png' % order_number, crop_img)
 
-        # 输出图片保存信息
-        self.queue_dispose.put([order_number, 0])
-        print('Picture: %s%d_0.png Save Successful' % (self.cut_pic_path, order_number))
+            # 输出图片保存信息
+            self.queue_dispose.put([order_number, 0])
+            print('Picture: %s%d_0.png Save Successful' % (self.cut_pic_path, order_number))
 
-        # 保存下半张图片
-        img = all_img.copy()
-        crop_img = img[int(self.transverseline[1]):int(self.transverseline[2]),
-                   int(self.verticalline[0]):int(self.verticalline[1])]
-        cv2.imwrite(self.cut_pic_path + '%d_1.png' % order_number, crop_img)
+            # 保存下半张图片
+            img = all_img.copy()
+            crop_img = img[int(self.transverseline[1]):int(self.transverseline[2]),
+                       int(self.verticalline[0]):int(self.verticalline[1])]
+            cv2.imwrite(self.cut_pic_path + '%d_1.png' % order_number, crop_img)
 
-        # 输出图片保存信息
-        self.queue_dispose.put([order_number, 1])
-        print('Picture: %s%d_1.png Save Successful' % (self.cut_pic_path, order_number))
+            # 输出图片保存信息
+            self.queue_dispose.put([order_number, 1])
+            print('Picture: %s%d_1.png Save Successful' % (self.cut_pic_path, order_number))
 
 
     def start_search_multiprocess(self, queue_dispose, queue_write):
 
         v = GoodClassifier(shopping_list_path='./shopping_list.txt', weight_path='./weight.h5')
 
-        while not queue_dispose.empty():
+        sign = 1
+        while sign:
+            while not queue_dispose.empty():
 
-            value = queue_dispose.get()
+                value = queue_dispose.get()
 
-            print('开始处理%d-%d数据' % (value[0], value[1]))
+                print('开始处理%d-%d数据' % (value[0], value[1]))
 
-            name, confidence = v.single_recognize(self.cut_pic_path + '%d_%d.png' % (value[0], value[1]))
+                name, confidence = v.single_recognize(self.cut_pic_path + '%d_%d.png' % (value[0], value[1]))
 
-            print('%d-%d识别结果: %s-%s' % (value[0], value[1], name, confidence))
+                print('%d-%d识别结果: %s-%s' % (value[0], value[1], name, confidence))
 
-            queue_write.put([confidence, name, value[0], value[1]])
+                queue_write.put([confidence, name, value[0], value[1]])
 
-            if value[0] == 7 and value[1] == 1:
-                print('处理结束！！！！！')
-                break
+                if value[0] == 7 and value[1] == 1:
+                    print('处理结束！！！！！')
+                    sign = 0
+                    break
 
 
     def final_process_queue(self):
@@ -764,7 +778,7 @@ class RobotCarHandle():
     # 返回B,C,D区结果
     def return_second_result(self):
         print(self.second_data)
-        return sorted(self.second_data)
+        return self.second_data
 
     # 最终处理
     def final_process(self):
@@ -1178,7 +1192,9 @@ class RobotCarHandle():
             # 输出图片保存信息
             print('Picture: %s%d_0.png Save Successful' % (self.cut_pic_path, order_number))
             # 添加进程任务
-            self.data_pipe[0].send([order_number, 0])
+            crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
+            crop_img = cv2.resize(crop_img, (299, 299))
+            self.data_pipe[0].send([order_number, 0, crop_img])
 
             # 保存下半张图片
             img = all_img.copy()
@@ -1187,13 +1203,15 @@ class RobotCarHandle():
             # 输出图片保存信息
             print('Picture: %s%d_1.png Save Successful' % (self.cut_pic_path, order_number))
             # 添加进程任务
-            self.data_pipe[0].send([order_number, 1])
+            crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
+            crop_img = cv2.resize(crop_img, (299, 299))
+            self.data_pipe[0].send([order_number, 1, crop_img])
 
     # 查询列表并组织识别进程函数 - 用PIPE
     def start_search_pipe(self, tempfile, datapipe, resultpipe):
         print("Recongnition Process Start")
 
-        v = GoodClassifier(shopping_list_path='./shopping_list.txt', weight_path='./weight.h5')
+        v = GoodClassifier(shopping_list_path='./shopping_list.txt', weight_path='./weight_8.h5')
 
         try:
             while True:
@@ -1202,16 +1220,16 @@ class RobotCarHandle():
                     print("Recongnition Process End")
                     break
                 # print(Item)
-                self.tf_noconfirm_pipe(int(Item[0]), int(Item[1]), v, datapipe, resultpipe)
+                self.tf_noconfirm_pipe(int(Item[0]), int(Item[1]), v, datapipe, resultpipe, Item[2])
         except EOFError:
             datapipe.close()
 
     # 用TranserFlow识别 - 不带验证 - 用PIPE - 配套 final_process_confirm_pipe()
-    def tf_noconfirm_pipe(self, order_number, position_number, v, datapipe, resultpipe):
+    def tf_noconfirm_pipe(self, order_number, position_number, v, datapipe, resultpipe, img):
         print('开始处理%d-%d数据' % (order_number, position_number))
 
-        name, confidence = v.single_recognize(self.cut_pic_path + '%d_%d.png' % (order_number, position_number))
-
+        # name, confidence = v.single_recognize(self.cut_pic_path + '%d_%d.png' % (order_number, position_number))
+        name, confidence = v.single_recognize(img)
         print('%d-%d识别结果: %s-%s' % (order_number, position_number, name, confidence))
 
         # 送出结果
@@ -1219,9 +1237,9 @@ class RobotCarHandle():
 
         print('%d-%d数据处理完成' % (order_number, position_number))
 
-        if order_number == 7 and position_number == 1:
-            datapipe[0].send([0, 0])
-            resultpipe[0].send([0, 0])
+        if order_number == 24 and position_number == 1:
+            datapipe[0].send([0, 0, None])
+            resultpipe[0].send([0, 0, None])
 
     # 最终处理 - 带确认 - 用PIPE
     def final_process_confirm_pipe(self):
@@ -1432,8 +1450,18 @@ class RobotCarHandle():
         print('-----------------------------Not Get----------------------------')
         print(Not_Get)
 
-        # 生成抓取列表
-        self.second_data = sorted_return_list[:]
+        lists = sorted(sorted_return_list[:])
+        temporary = []
+        for i in lists:
+            if i[2] == 'zhong hua pencil':
+                temporary = i
+            else:
+                self.second_data.append(i)
+                # self.second_data = sorted_return_list[:]
+        if temporary:
+            self.second_data.append(temporary)
+        else:
+            pass
 
     # 列表转换函数 - [识别度, 物品名称, 照片序号， 上下编号{上-0|下-1}] 转 [区号, 编号, 物品名称]
     def callistcontent(self, Item):
@@ -1452,7 +1480,10 @@ class RobotCarHandle():
         Number = 0
 
         # 计算区域码
-        if quhao == 'B':
+        if quhao == 'A':
+            Number += 0
+            Number += int(order_number)
+        elif quhao == 'B':
             Number += 12 
             Number += int(order_number)
         elif quhao == 'C':
@@ -1497,14 +1528,14 @@ class RobotCarHandle():
                         old_data.append(q)
                         adds += 1
                     else:
-                        if adds >= 6:
+                        if adds >= 4:
                             flag = 1
                             break
                         else:
                             adds = 0
                             old_data = []
                             break
-                if adds >= 6:
+                if adds >= 4:
                     flag = 1
             # print(old_data)
             if old_data:
@@ -1524,31 +1555,28 @@ class RobotCarHandle():
                     hsv = cv2.cvtColor(srcs, cv2.COLOR_BGR2HSV)
                     # lower_green = np.array([50, 40, 46])
                     # upper_green = np.array([110, 209, 170])
-                    lower_green = np.array([50, 20, 46])
+                    lower_green = np.array([50, 20, 20])
                     upper_green = np.array([110, 209, 170])
                     mask = cv2.inRange(hsv, lower_green, upper_green)
                     img, contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
                     if contours:
-                        a = contours[0]
-                        x, y, w, h = cv2.boundingRect(a)
-
                         for cnt in contours:
                             x, y, w, h = cv2.boundingRect(cnt)
-                            if w + h > 300:
+                            if w + h > 250:
                                 print(w + h)
                                 # print('zhong hua qian bi')
                                 return True
                                 # pass
-                #             cv2.rectangle(srcs, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                            # cv2.rectangle(srcs, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 #     cv2.namedWindow('123')
                 #     cv2.imshow("123", srcs)
                 # cv2.namedWindow('gray', cv2.WINDOW_NORMAL)
                 # cv2.imshow("gray", cdst)
+                # cv2.waitKey(0)
                 # cv2.namedWindow('source', cv2.WINDOW_NORMAL)
                 # cv2.imshow("source", src)
                 # cv2.namedWindow('lines', cv2.WINDOW_NORMAL)
                 # cv2.imshow("lines", cdst)
-                # cv2.waitKey(0)
             return False
         except:
             return False
@@ -1566,7 +1594,7 @@ class RobotCarHandle():
     # 咪咪虾条确认函数
     def mimi_confirm(self, quhao, order_number):
         Mimi_Template_Image = ["./model/92.png"]
-        Yuzhi = [150]
+        Yuzhi = [200]
 
         # 区域码
         Number = 0
@@ -1632,7 +1660,7 @@ class RobotCarHandle():
     def yangleduo_confirm(self, quhao, order_number):
         print('养乐多确认开始')
         Yangleduo_Template_Image = ["./model/IMG_3855.JPG", "./model/1122.png"]
-        Yuzhi = [100, 60]
+        Yuzhi = [110, 60]
 
         # 区域码
         Number = 0
@@ -1694,8 +1722,8 @@ class RobotCarHandle():
                 #判断是否是已识别物品位置
                 if [Item, order_number] not in Position:
                     if self.yangleduo_confirm(Item, order_number):
+                        print([Item, order_number, 'yang le duo'])
                         return [Item, order_number, 'yang le duo']
-                        # print([Item, order_number, 'yang le duo'])
                         # pass
 
     # 加多宝确认函数
@@ -1795,8 +1823,12 @@ class RobotCarHandle():
             face_cascade = cv2.CascadeClassifier(self.xml_Path + 'pingpong.xml')
             faces = face_cascade.detectMultiScale(gray, 1.3, 5)
             for (x, y, w, h) in faces:
-                if w + h > 200 and w + h < 400:  # 针对这个图片画出最大的外框
-                    if x > sp[1] / 4 and x < sp[1] / 4 * 3:
+                # print(w + h)
+                # cv2.rectangle(crop_img, (x, y), (x + w, y + h), (255, 255, 255), 4)
+                # print(x, y)
+                # print(sp[1] / 4, sp[1] / 4 * 3)
+                if  300 < w + h < 600:  # 针对这个图片画出最大的外框
+                    if int(sp[1] / 4) < x < int(sp[1] / 4 * 3):
                         if Number % 2 == 1 and y < self.transverseline[1] - self.transverseline[0]:
                             if y > (self.transverseline[1] - self.transverseline[0]) / 2:
                                 img_ready = crop_img.copy()
@@ -1805,16 +1837,16 @@ class RobotCarHandle():
                                 cv2.rectangle(crop_img, (x, y), (x + w, y + h), (255, 255, 255), 4)
                                 # roi_gray = gray[y:y+h, x:x+w]
                                 roi_color = crop_img[y:y + h, x:x + w]
-                                # if self.pingpongcolor(roi_color):
-                                #     return True
+                                if self.pingpongcolor(roi_color):
+                                    return True
                                 # print 'pingpong'
                                 # return True
                                 # cv2.imwrite('96.png', roi_color)
-                                cv2.namedWindow('123', cv2.WINDOW_NORMAL)
-                                cv2.imshow('123', roi_color)
+                                # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
+                                # cv2.imshow('123', roi_color)
                                 # cv2.namedWindow('imgs', cv2.WINDOW_NORMAL)
                                 # cv2.imshow('imgs', img_ready)
-                                k = cv2.waitKey(0)
+                                # k = cv2.waitKey(0)
                                 # print(self.pingpongcolor(hsv))
                         elif Number % 2 == 0 and y > self.transverseline[1] - self.transverseline[0]:
                             if y > self.transverseline[1] - self.transverseline[0] + (
@@ -1826,18 +1858,21 @@ class RobotCarHandle():
                                 cv2.rectangle(crop_img, (x, y), (x + w, y + h), (255, 255, 255), 4)
                                 # roi_gray = gray[y:y+h, x:x+w]
                                 roi_color = crop_img[y:y + h, x:x + w]
-                                # if self.pingpongcolor(roi_color):
-                                #     return True
+                                if self.pingpongcolor(roi_color):
+                                    return True
                                 # print 'pingpong'
                                 # return True
                                 # cv2.imwrite('96.png', roi_color)
-                                cv2.namedWindow('123', cv2.WINDOW_NORMAL)
-                                cv2.imshow('123', roi_color)
+                                # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
+                                # cv2.imshow('123', roi_color)
                                 # cv2.namedWindow('imgs', cv2.WINDOW_NORMAL)
                                 # cv2.imshow('imgs', img_ready)
-                                k = cv2.waitKey(0)
+                                # k = cv2.waitKey(0)
                                 # print(self.pingpongcolor(hsv))
-
+            # crop_img = cv2.resize(crop_img, (640, 480))
+            # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
+            # cv2.imshow('123', crop_img)
+            # cv2.waitKey(0)
             # cv2.line(crop_img, (0, (self.transverseline[1] - self.transverseline[0]) / 2), (1400, (self.transverseline[1] - self.transverseline[0]) / 2),
             # (255, 0, 0), 3, cv2.LINE_AA)
             # cv2.line(crop_img, (0, 820), (1400, 820),(0, 255, 0), 3, cv2.LINE_AA)
@@ -1900,112 +1935,21 @@ class RobotCarHandle():
                         print([Item, order_number, 'white pingpang ball'])
                         # return [Item, order_number, 'white pingpang ball']
 
-    # 网球全图匹配函数
-    def find_tennis(self, Position):
-        Qu = ['B', 'C', 'D']
-        for Item in Qu:
-            for order_number in range(1, 13):
-                #判断是否是已识别物品位置
-                if [Item, order_number] not in Position:
-                    if self.tennis_confirm(Item, order_number):
-                        # print([Item, order_number, 'tennis ball'])
-                        return [Item, order_number, 'tennis ball']
-
-    # 网球检测函数
-    def tennis_confirm(self, quhao, order_number):
-        print('网球验证开始')
-        # 区域码
-        Number = 0
-
-        # 计算区域码
-        if quhao == 'B':
-            Number += 12
-            Number += int(order_number)
-        elif quhao == 'C':
-            Number += 24
-            Number += int(order_number)
-        else:
-            Number += 36
-            Number += int(order_number)
-        try:
-            img = cv2.imread(self.photo_path + '%s.png' % str((Number + 1) // 2))
-            if order_number % 2 == 1:
-                crop_img = img[int(self.transverseline[0]):int(self.transverseline[1]),
-                           int(self.verticalline[0]):int(self.verticalline[1])]
-            else:
-                crop_img = img[int(self.transverseline[1]):int(self.transverseline[2]),
-                           int(self.verticalline[0]):int(self.verticalline[1])]
-
-            return self.circle_dectection(crop_img)
-        except Exception as e:
-            print(e)
-
-    # 圆环检测函数
-    def circle_dectection(self, imgs):
-        # img = cv2.imread('20-45-31.png', 0)
-
-        img = cv2.cvtColor(imgs, cv2.COLOR_RGB2GRAY)
-        img = cv2.medianBlur(img, 5)
-        cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        # img_sss = imgs.copy()
-
-        circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 200,
-                                   param1=50, param2=40, minRadius=50, maxRadius=180)
-        # print(type(circles))
-        if circles is not None:
-            circles = np.uint16(np.around(circles))
-            circlelist = []
-            for i in circles[0, :]:
-                cv2.circle(img, (i[0], i[1]), i[2], (0, 255, 0), 2)
-                cv2.circle(img, (i[0], i[1]), 2, (0, 0, 255), 3)
-                # print(i[0], i[1], i[2])
-                if i[2] > 100:
-                    circlelist.append(i)
-                    # img_sss = imgs[i[1] - i[2]:i[1] + i[2], i[0] - i[2]:i[0] + i[2]]  # [858:960,648:750]
-            # print(len(circlelist))
-            if len(circlelist) > 0:
-                for i in circlelist:
-                    # print(i)
-                    hsv = cv2.cvtColor(imgs, cv2.COLOR_BGR2HSV)
-                    # print([abs(int(i[1]) - int(i[2])), i[1] + i[2], i[0] - i[2], i[0] + i[2]])
-                    hsv = hsv[abs(int(i[1]) - int(i[2])):i[1] + i[2],
-                          abs(int(i[0]) - int(i[2])):i[0] + i[2]]
-                    if self.tenniscolor(hsv):
-                        return True
-                        # img_sss = imgs[circlelist[0][1] - circlelist[0][2]:circlelist[0][1] + circlelist[0][2], circlelist[0][0] - circlelist[0][2]:circlelist[0][0] + circlelist[0][2]]
-
-                        # pass
-
-                        # circlelist = []
-
-                    # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
-                    # cv2.imshow('123', img)
-                    # cv2.waitKey(0)
-        return False
-        # plt.subplot(121), plt.imshow(cimg, cmap='gray')
-        # plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-        # plt.show()
-        # cv2.imshow('123', cimg)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-    # 网球颜色检测
-    def tenniscolor(self, hsv):
-        lower_yellow = np.array([32, 60, 58])
-        upper_yellow = np.array([40, 255, 210])
-        mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
-        img, contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        print(len(contours))
-        if len(contours) >= 150:
-            print('网球')
-            return True
-        return False
-
 # 测试函数
 if __name__ == "__main__":
+    # img = cv2.imread('./picture/1.png')
+    # print(type(img))
     vision = RobotCarHandle()
-    print(vision.pencil_confirm('C', 4))
+    # print(vision.pencil_confirm('A', 4))
+    vision.find_yangleduo([])
+    # print(vision.yangleduo_confirm('D', 11))
+    # vision.find_yangleduo([])
+    # vision.image_handle_fixed_value()
+    # vision.return_first_result()
+    # print(vision.pencil_confirm('D', 7))
+    # print(vision.pencil_confirm('B', 6))
     # for i in range(7, 25):
     #     vision.second_process_pipe(i)
     # vision.final_process_confirm_pipe()
     # vision.return_second_result()
+    # p = vision.second_process_queue(0)
