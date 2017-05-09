@@ -101,14 +101,14 @@ class RobotCarHandle():
 
         self.data_pipe = Pipe(True)
         self.result_pipe = Pipe(True)
-        
+
     # 开启摄像头
     def open_camera(self):
         self.cap = cv2.VideoCapture(1)
 
         #设置图像尺寸
-        self.cap.set(3,3220)
-        self.cap.set(4,2440)
+        self.cap.set(3, 2592)
+        self.cap.set(4, 1944)
         
         # 打开摄像头
         if not self.cap.isOpened():
@@ -274,9 +274,9 @@ class RobotCarHandle():
                         # contour_area_temp = np.fabs(cv2.contourArea(cnt))
                         x, y, w, h = cv2.boundingRect(cnt)
                         if w + h > 300:
-                        #     if w+h > adjust:
-                        #         adjust = w + h
-                        #     cv2.rectangle(crop_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                            # if w+h > adjust:
+                            #     adjust = w + h
+                            # cv2.rectangle(crop_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
                             self.color_materials.append(["A", 2 * picture_sign - 1, "yellow cube"])
                             # print(w + h)
                             break
@@ -300,9 +300,9 @@ class RobotCarHandle():
                         # contour_area_temp = np.fabs(cv2.contourArea(cnt))
                         x, y, w, h = cv2.boundingRect(cnt)
                         if w + h > 300:
-                            # if w+h > adjust:
-                            #     adjust = w + h
-                            # cv2.rectangle(crop_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        #     if w+h > adjust:
+                        #         adjust = w + h
+                        #     cv2.rectangle(crop_img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
                             self.color_materials.append(["A", 2 * picture_sign, "yellow cube"])
                             # print(w + h)
@@ -1237,7 +1237,7 @@ class RobotCarHandle():
 
         print('%d-%d数据处理完成' % (order_number, position_number))
 
-        if order_number == 24 and position_number == 1:
+        if order_number == 7 and position_number == 1:
             datapipe[0].send([0, 0, None])
             resultpipe[0].send([0, 0, None])
 
@@ -1567,7 +1567,7 @@ class RobotCarHandle():
                                 # print('zhong hua qian bi')
                                 return True
                                 # pass
-                            # cv2.rectangle(srcs, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                #             cv2.rectangle(srcs, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 #     cv2.namedWindow('123')
                 #     cv2.imshow("123", srcs)
                 # cv2.namedWindow('gray', cv2.WINDOW_NORMAL)
@@ -1594,7 +1594,7 @@ class RobotCarHandle():
     # 咪咪虾条确认函数
     def mimi_confirm(self, quhao, order_number):
         Mimi_Template_Image = ["./model/92.png"]
-        Yuzhi = [200]
+        Yuzhi = [150]
 
         # 区域码
         Number = 0
@@ -1660,7 +1660,7 @@ class RobotCarHandle():
     def yangleduo_confirm(self, quhao, order_number):
         print('养乐多确认开始')
         Yangleduo_Template_Image = ["./model/IMG_3855.JPG", "./model/1122.png"]
-        Yuzhi = [110, 60]
+        Yuzhi = [100, 60]
 
         # 区域码
         Number = 0
@@ -1722,8 +1722,8 @@ class RobotCarHandle():
                 #判断是否是已识别物品位置
                 if [Item, order_number] not in Position:
                     if self.yangleduo_confirm(Item, order_number):
-                        print([Item, order_number, 'yang le duo'])
                         return [Item, order_number, 'yang le duo']
+                        # print([Item, order_number, 'yang le duo'])
                         # pass
 
     # 加多宝确认函数
@@ -1823,12 +1823,8 @@ class RobotCarHandle():
             face_cascade = cv2.CascadeClassifier(self.xml_Path + 'pingpong.xml')
             faces = face_cascade.detectMultiScale(gray, 1.3, 5)
             for (x, y, w, h) in faces:
-                # print(w + h)
-                # cv2.rectangle(crop_img, (x, y), (x + w, y + h), (255, 255, 255), 4)
-                # print(x, y)
-                # print(sp[1] / 4, sp[1] / 4 * 3)
-                if  300 < w + h < 600:  # 针对这个图片画出最大的外框
-                    if int(sp[1] / 4) < x < int(sp[1] / 4 * 3):
+                if w + h > 200 and w + h < 400:  # 针对这个图片画出最大的外框
+                    if x > sp[1] / 4 and x < sp[1] / 4 * 3:
                         if Number % 2 == 1 and y < self.transverseline[1] - self.transverseline[0]:
                             if y > (self.transverseline[1] - self.transverseline[0]) / 2:
                                 img_ready = crop_img.copy()
@@ -1837,16 +1833,16 @@ class RobotCarHandle():
                                 cv2.rectangle(crop_img, (x, y), (x + w, y + h), (255, 255, 255), 4)
                                 # roi_gray = gray[y:y+h, x:x+w]
                                 roi_color = crop_img[y:y + h, x:x + w]
-                                if self.pingpongcolor(roi_color):
-                                    return True
+                                # if self.pingpongcolor(roi_color):
+                                #     return True
                                 # print 'pingpong'
                                 # return True
                                 # cv2.imwrite('96.png', roi_color)
-                                # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
-                                # cv2.imshow('123', roi_color)
+                                cv2.namedWindow('123', cv2.WINDOW_NORMAL)
+                                cv2.imshow('123', roi_color)
                                 # cv2.namedWindow('imgs', cv2.WINDOW_NORMAL)
                                 # cv2.imshow('imgs', img_ready)
-                                # k = cv2.waitKey(0)
+                                k = cv2.waitKey(0)
                                 # print(self.pingpongcolor(hsv))
                         elif Number % 2 == 0 and y > self.transverseline[1] - self.transverseline[0]:
                             if y > self.transverseline[1] - self.transverseline[0] + (
@@ -1858,21 +1854,18 @@ class RobotCarHandle():
                                 cv2.rectangle(crop_img, (x, y), (x + w, y + h), (255, 255, 255), 4)
                                 # roi_gray = gray[y:y+h, x:x+w]
                                 roi_color = crop_img[y:y + h, x:x + w]
-                                if self.pingpongcolor(roi_color):
-                                    return True
+                                # if self.pingpongcolor(roi_color):
+                                #     return True
                                 # print 'pingpong'
                                 # return True
                                 # cv2.imwrite('96.png', roi_color)
-                                # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
-                                # cv2.imshow('123', roi_color)
+                                cv2.namedWindow('123', cv2.WINDOW_NORMAL)
+                                cv2.imshow('123', roi_color)
                                 # cv2.namedWindow('imgs', cv2.WINDOW_NORMAL)
                                 # cv2.imshow('imgs', img_ready)
-                                # k = cv2.waitKey(0)
+                                k = cv2.waitKey(0)
                                 # print(self.pingpongcolor(hsv))
-            # crop_img = cv2.resize(crop_img, (640, 480))
-            # cv2.namedWindow('123', cv2.WINDOW_NORMAL)
-            # cv2.imshow('123', crop_img)
-            # cv2.waitKey(0)
+
             # cv2.line(crop_img, (0, (self.transverseline[1] - self.transverseline[0]) / 2), (1400, (self.transverseline[1] - self.transverseline[0]) / 2),
             # (255, 0, 0), 3, cv2.LINE_AA)
             # cv2.line(crop_img, (0, 820), (1400, 820),(0, 255, 0), 3, cv2.LINE_AA)
@@ -1941,13 +1934,12 @@ if __name__ == "__main__":
     # print(type(img))
     vision = RobotCarHandle()
     # print(vision.pencil_confirm('A', 4))
-    vision.find_yangleduo([])
-    # print(vision.yangleduo_confirm('D', 11))
-    # vision.find_yangleduo([])
-    # vision.image_handle_fixed_value()
-    # vision.return_first_result()
+    # vision.open_camera()
+    # time.sleep(5)
+    # vision.close_camera()
+    vision.image_handle_fixed_value()
+    print(vision.return_first_result())
     # print(vision.pencil_confirm('D', 7))
-    # print(vision.pencil_confirm('B', 6))
     # for i in range(7, 25):
     #     vision.second_process_pipe(i)
     # vision.final_process_confirm_pipe()
