@@ -17,7 +17,7 @@ class RobotCarHandle():
 
     """
 
-    def __init__(self):
+    def __init__(self, filepath=None, gaosi_sign=0):
         self.queue_dispose = Queue()
 
         self.queue_write = Queue()
@@ -29,7 +29,20 @@ class RobotCarHandle():
         self.taking_photo_times = 2
 
         # 图像存储路径
-        self.photo_path = './picture/'
+        if filepath:
+            self.photo_path = './recentphoto/{}/'.format(filepath)
+        else:
+            self.photo_path = './picture/'
+
+
+        self.end = 7
+        print(self.end)
+
+        self.gaosi_sign = gaosi_sign
+        if self.gaosi_sign:
+            print('高斯模式开启')
+        else:
+            print('原图模式开启')
 
         # 黄色小木块初始颜色阈值
         self.lower_yellow = np.array([15, 150, 80])
@@ -47,12 +60,15 @@ class RobotCarHandle():
 
         # 图片切割信息
         self.verticalline = [500, 2100]
-        self.transverseline = [250, 1000, 1944]
+        self.transverseline = [200, 1000, 1944]
 
         # NeuralNetwork
         # self.Nn = NeuralNetwork()
         # 切图保存路径
-        self.cut_pic_path = './picture/Cut/'
+        if not filepath:
+            self.cut_pic_path = './picture/Cut/'
+        else:
+            self.cut_pic_path = './recentphoto/{}/Cut'.format(filepath)
 
         # 图片预处理列表 [识别度, 物品名称, 照片序号， 上下编号{上-0|下-1}, 验证结果{True|False}]
         self.pre_items = []
@@ -1188,9 +1204,13 @@ class RobotCarHandle():
             # 保存上半张图片
             img = all_img.copy()
             crop_img = img[int(self.transverseline[0]):int(self.transverseline[1]),int(self.verticalline[0]):int(self.verticalline[1])]
-            cv2.imwrite(self.cut_pic_path + '%d_0.png' % order_number, crop_img)
-            # 输出图片保存信息
-            print('Picture: %s%d_0.png Save Successful' % (self.cut_pic_path, order_number))
+            if self.gaosi_sign:
+                crop_img = self.gaosi(crop_img)
+
+            # cv2.imwrite(self.cut_pic_path + '%d_0.png' % order_number, crop_img)
+            # # 输出图片保存信息
+            # print('Picture: %s%d_0.png Save Successful' % (self.cut_pic_path, order_number))
+
             # 添加进程任务
             crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
             crop_img = cv2.resize(crop_img, (299, 299))
@@ -1199,9 +1219,13 @@ class RobotCarHandle():
             # 保存下半张图片
             img = all_img.copy()
             crop_img = img[int(self.transverseline[1]):int(self.transverseline[2]),int(self.verticalline[0]):int(self.verticalline[1])]
-            cv2.imwrite(self.cut_pic_path + '%d_1.png' % order_number, crop_img)
-            # 输出图片保存信息
-            print('Picture: %s%d_1.png Save Successful' % (self.cut_pic_path, order_number))
+            if self.gaosi_sign:
+                crop_img = self.gaosi(crop_img)
+
+            # cv2.imwrite(self.cut_pic_path + '%d_1.png' % order_number, crop_img)
+            # # 输出图片保存信息
+            # print('Picture: %s%d_1.png Save Successful' % (self.cut_pic_path, order_number))
+
             # 添加进程任务
             crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB)
             crop_img = cv2.resize(crop_img, (299, 299))
@@ -1211,7 +1235,7 @@ class RobotCarHandle():
     def start_search_pipe(self, tempfile, datapipe, resultpipe):
         print("Recongnition Process Start")
 
-        v = GoodClassifier(shopping_list_path='./shopping_list.txt', weight_path='./weight_8.h5')
+        v = GoodClassifier(shopping_list_path='./shopping_list.txt', weight_path='./weight.h5')
 
         try:
             while True:
@@ -1237,7 +1261,7 @@ class RobotCarHandle():
 
         print('%d-%d数据处理完成' % (order_number, position_number))
 
-        if order_number == 7 and position_number == 1:
+        if order_number == self.end and position_number == 1:
             datapipe[0].send([0, 0, None])
             resultpipe[0].send([0, 0, None])
 
@@ -1304,6 +1328,14 @@ class RobotCarHandle():
                     return_list.append(FItem)
                     Already_Get.append(name)
                     Already_Get_Position.append(FItem[:-1])
+                elif name == 'zhong hua pencil':
+                    return_list.append(FItem)
+                    Already_Get.append(name)
+                    Already_Get_Position.append(FItem[:-1])
+                elif name == 'mimi':
+                    return_list.append(FItem)
+                    Already_Get.append(name)
+                    Already_Get_Position.append(FItem[:-1])
                 else:
                     # 需要验证的列表
                     try:
@@ -1315,27 +1347,27 @@ class RobotCarHandle():
                         #         return_list.append(FItem)
                         #         Already_Get.append(name)
                         #         Already_Get_Position.append(FItem[:-1])
-                        if name == 'mimi':
-                            print('开始验证咪咪')
-                            if self.mimi_confirm(FItem[0], FItem[1]):
-                                print('咪咪验证成功')
-                                return_list.append(FItem)
-                                Already_Get.append(name)
-                                Already_Get_Position.append(FItem[:-1])
-                        elif name == 'yang le duo':
+                        # if name == 'mimi':
+                        #     print('开始验证咪咪')
+                        #     if self.mimi_confirm(FItem[0], FItem[1]):
+                        #         print('咪咪验证成功')
+                        #         return_list.append(FItem)
+                        #         Already_Get.append(name)
+                        #         Already_Get_Position.append(FItem[:-1])
+                        if name == 'yang le duo':
                             print('开始验证养乐多')
                             if self.yangleduo_confirm(FItem[0], FItem[1]):
                                 print('养乐多验证成功')
                                 return_list.append(FItem)
                                 Already_Get.append(name)
                                 Already_Get_Position.append(FItem[:-1])
-                        elif name == 'zhong hua pencil':
-                            print('开始验证中华铅笔')
-                            if self.pencil_confirm(FItem[0], FItem[1]):
-                                print('中华铅笔验证成功')
-                                return_list.append(FItem)
-                                Already_Get.append(name)
-                                Already_Get_Position.append(FItem[:-1])
+                        # elif name == 'zhong hua pencil':
+                        #     print('开始验证中华铅笔')
+                        #     if self.pencil_confirm(FItem[0], FItem[1]):
+                        #         print('中华铅笔验证成功')
+                        #         return_list.append(FItem)
+                        #         Already_Get.append(name)
+                        #         Already_Get_Position.append(FItem[:-1])
                         # elif name == 'tennis ball':
                         #     print('开始验证网球')
                         #     if self.tennis_confirm(FItem[0], FItem[1]):
@@ -1375,27 +1407,27 @@ class RobotCarHandle():
             except Exception as e:
                 print(e)
 
-        # 判断咪咪是已获得，否则全照片判断咪咪位置
-        if not 'mimi' in Already_Get:
-            try:
-                Mimi = self.find_mimi(Already_Get_Position)
-                if Mimi:
-                    return_list.append(Mimi)
-                    Already_Get.append('mimi')
-                    Already_Get_Position.append(Mimi[:-1])
-            except Exception as e:
-                print(e)
+        # # 判断咪咪是已获得，否则全照片判断咪咪位置
+        # if not 'mimi' in Already_Get:
+        #     try:
+        #         Mimi = self.find_mimi(Already_Get_Position)
+        #         if Mimi:
+        #             return_list.append(Mimi)
+        #             Already_Get.append('mimi')
+        #             Already_Get_Position.append(Mimi[:-1])
+        #     except Exception as e:
+        #         print(e)
 
-        # 判断加多宝是已获得，否则全照片判断加多宝位置
-        if not 'gold jia duo bao' in Already_Get:
-            try:
-                Jiaduobao = self.find_jiaduobao(Already_Get_Position)
-                if Jiaduobao:
-                    return_list.append(Jiaduobao)
-                    Already_Get.append('gold jia duo bao')
-                    Already_Get_Position.append(Jiaduobao[:-1])
-            except Exception as e:
-                print(e)
+        # # 判断加多宝是已获得，否则全照片判断加多宝位置
+        # if not 'gold jia duo bao' in Already_Get:
+        #     try:
+        #         Jiaduobao = self.find_jiaduobao(Already_Get_Position)
+        #         if Jiaduobao:
+        #             return_list.append(Jiaduobao)
+        #             Already_Get.append('gold jia duo bao')
+        #             Already_Get_Position.append(Jiaduobao[:-1])
+        #     except Exception as e:
+        #         print(e)
 
         # # 判断乒乓是已获得，否则全照片判断乒乓位置
         # if not 'white pingpang ball' in Already_Get:
@@ -1452,12 +1484,22 @@ class RobotCarHandle():
 
         lists = sorted(sorted_return_list[:])
         temporary = []
+        adjust = []
         for i in lists:
             if i[2] == 'zhong hua pencil':
                 temporary = i
             else:
                 self.second_data.append(i)
                 # self.second_data = sorted_return_list[:]
+        for i, j in enumerate(self.second_data):
+            if i != len(self.second_data) - 1:
+                if self.second_data[i][0] == self.second_data[i + 1][0]:
+                    if self.second_data[i + 1][1] - self.second_data[i][1] == 1 and self.second_data[i + 1][1] % 2 == 0:
+                        adjust = self.second_data[i + 1]
+                        self.second_data[i + 1] = self.second_data[i]
+                        self.second_data[i] = adjust
+            else:
+                pass
         if temporary:
             self.second_data.append(temporary)
         else:
@@ -1507,6 +1549,7 @@ class RobotCarHandle():
         flag = 0
         old_data = []
         lists = []
+        yuzhi = [4, 8]
 
         lines = cv2.HoughLinesP(dst, 1, math.pi / 180.0, 100, np.array([]), 45, 25)
         try:
@@ -1528,14 +1571,14 @@ class RobotCarHandle():
                         old_data.append(q)
                         adds += 1
                     else:
-                        if adds >= 4:
+                        if adds >= yuzhi[Number % 2]:
                             flag = 1
                             break
                         else:
                             adds = 0
                             old_data = []
                             break
-                if adds >= 4:
+                if adds >= yuzhi[Number % 2]:
                     flag = 1
             # print(old_data)
             if old_data:
@@ -1562,7 +1605,7 @@ class RobotCarHandle():
                     if contours:
                         for cnt in contours:
                             x, y, w, h = cv2.boundingRect(cnt)
-                            if w + h > 250:
+                            if w + h > 300:
                                 print(w + h)
                                 # print('zhong hua qian bi')
                                 return True
@@ -1589,12 +1632,13 @@ class RobotCarHandle():
                 #判断是否是已识别物品位置
                 if [Item, order_number] not in Position:
                     if self.pencil_confirm(Item, order_number):
+                        print([Item, order_number, 'zhong hua pencil'])
                         return [Item, order_number, 'zhong hua pencil']
 
     # 咪咪虾条确认函数
     def mimi_confirm(self, quhao, order_number):
         Mimi_Template_Image = ["./model/92.png"]
-        Yuzhi = [150]
+        Yuzhi = [160]
 
         # 区域码
         Number = 0
@@ -1627,11 +1671,13 @@ class RobotCarHandle():
             kp1, des1 = sift.detectAndCompute(img1, None)
             kp2, des2 = sift.detectAndCompute(img2, None)
 
-            FLANN_INDEX_KDTREE = 0
-            index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-            search_params = dict(checks=50)
-            flann = cv2.FlannBasedMatcher(index_params, search_params)
-            matches = flann.knnMatch(np.asarray(des1, np.float32), np.asarray(des2, np.float32), k=2)
+            # FLANN_INDEX_KDTREE = 0
+            # index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+            # search_params = dict(checks=50)
+            # flann = cv2.FlannBasedMatcher(index_params, search_params)
+            # matches = flann.knnMatch(np.asarray(des1, np.float32), np.asarray(des2, np.float32), k=2)
+            bf = cv2.BFMatcher()
+            matches = bf.knnMatch(des1, des2, k=2)
 
             good = []
 
@@ -1654,6 +1700,7 @@ class RobotCarHandle():
                 #判断是否是已识别物品位置
                 if [Item, order_number] not in Position:
                     if self.mimi_confirm(Item, order_number):
+                        print([Item, order_number, 'mimi'])
                         return [Item, order_number, 'mimi']
 
     # 养乐多确认函数
@@ -1728,7 +1775,7 @@ class RobotCarHandle():
 
     # 加多宝确认函数
     def jiaduobao_confirm(self, quhao, order_number):
-        Jiaduobao_Template_Image = ["./model/111.jpg"]
+        Jiaduobao_Template_Image = ["./model/65.png"]
         Yuzhi = [80]
 
         # 区域码
@@ -1928,20 +1975,47 @@ class RobotCarHandle():
                         print([Item, order_number, 'white pingpang ball'])
                         # return [Item, order_number, 'white pingpang ball']
 
+    def gaosi(self, img):
+        kernel_size = (5, 5)
+        sigma = 1.5
+
+        return  cv2.GaussianBlur(img, kernel_size, sigma)
+
+        # for i in range(7, 25):
+        #     path = self.photo_path + '%d.png' % i
+        #     img = cv2.imread(path)
+        #
+        #     img = cv2.GaussianBlur(img, kernel_size, sigma)
+        #
+        #     cv2.imwrite('./pictures/{}.png'.format(i), img)
+        #     print('%d.png处理完成'% i)
+
+
+
 # 测试函数
 if __name__ == "__main__":
     # img = cv2.imread('./picture/1.png')
     # print(type(img))
-    vision = RobotCarHandle()
+    vision = RobotCarHandle(gaoso_sign=0)
+
+
+    # print(vision.jiaduobao_confirm('B', 10))
+    # print(vision.jiaduobao_confirm('B', 7))
+    # vision.gaosi()
+    # print(vision.yangleduo_confirm('C', 8))
+    # vision.image_handle_fixed_value()
+    # print(vision.return_first_result())
     # print(vision.pencil_confirm('A', 4))
     # vision.open_camera()
     # time.sleep(5)
     # vision.close_camera()
-    vision.image_handle_fixed_value()
-    print(vision.return_first_result())
+    # vision.find_pencil([])
+    # print(vision.pencil_confirm('B', 1))
+    # vision.image_handle_fixed_value()
+    # print(vision.return_first_result())
     # print(vision.pencil_confirm('D', 7))
-    # for i in range(7, 25):
-    #     vision.second_process_pipe(i)
-    # vision.final_process_confirm_pipe()
-    # vision.return_second_result()
+    for i in range(7, 25):
+        vision.second_process_pipe(i)
+    vision.final_process_confirm_pipe()
+    vision.return_second_result()
     # p = vision.second_process_queue(0)
